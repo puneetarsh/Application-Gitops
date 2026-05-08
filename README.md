@@ -1,14 +1,23 @@
-## VProfile Web Application
+<div align="center">
+
+![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=flat&logo=amazon-aws&logoColor=white)
+![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=flat&logo=terraform&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=flat&logo=kubernetes&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=flat&logo=githubactions&logoColor=white)
+![SonarCloud](https://img.shields.io/badge/SonarCloud-F3702A?style=flat&logo=SonarCloud&logoColor=white)
+
+</div>
+
+## GitOps-Driven Infrastructure & App Deployment on AWS EKS
 
 ### Overview
-A Java Spring MVC web application for user profile management with:
-- registration and login via Spring Security
-- MySQL persistence using Spring Data JPA
-- JSP-based UI pages
-- file upload support
-- RabbitMQ message publishing
-- Elasticsearch indexing and lookup
-- Memcached caching
+This project implements a full GitOps pipeline with two distinct workflows:
+
+Infrastructure as Code (IaC) — Manages AWS infrastructure using Terraform, triggered on changes to infrastructure code.
+Application Build & Deploy — Builds, tests, and deploys the application to Amazon EKS using Maven, Docker, and Helm.
+
+All changes originate from a developer's IDE (VS Code) via a git push and are fully automated through GitHub Actions runners.
 
 This repository also includes:
 - `Dockerfile` for containerized deployment
@@ -18,92 +27,40 @@ This repository also includes:
 
 ---
 
-## Features
-- User registration and authentication
-- Role-based access control for protected pages
-- View all users and individual user profiles
-- Update user profile details
-- Upload profile files from the web UI
-- Cache user lookup results with Memcached
-- Publish messages to RabbitMQ
-- Index user data in Elasticsearch and query by ID
-
----
+## Steps
+- Fetch Code — GitHub Actions runner checks out the repository.
+- Maven Build — Compiles and packages the application.
+- Static Code Analysis — SonarCloud scans the codebase for code quality and security issues.
+- Docker Build & Push — Builds a Docker image and pushes it to Amazon ECR.
+- Helm Deploy — Deploys the new image to Amazon EKS using Helm charts.
 
 ## Technology Stack
-- Java 11
-- Spring MVC, Spring Security, Spring Data JPA
-- Hibernate
-- MySQL
-- JSP / Servlets
-- RabbitMQ
-- Elasticsearch
-- Memcached
-- Maven
-- Tomcat 9
-- Docker
-- Jenkins
-- Ansible
-- Kubernetes
 
----
+| Category               | Tool           |
+|------------------------|----------------|
+| IDE                    | VS Code        |
+| Version Control        | Git / GitHub   |
+| CI/CD                  | GitHub Actions |
+| Infrastructure as Code | Terraform      |
+| Build Tool             | Maven          |
+| Static Code Analysis   | SonarCloud     |
+| Containerization       | Docker         |
+| Package Manager (K8s)  | Helm           |
+| Container Registry     | Amazon ECR     |
+| Kubernetes             | Amazon EKS     |
+| Cloud Provider         | AWS            |
+
 
 ## Prerequisites
-- JDK 11
-- Maven 3
-- MySQL 8
-- Docker (optional)
-- Jenkins / SonarQube / Nexus for CI/CD (optional)
 
----
-
-## Local Setup
-
-1. Clone the repository.
-
-2. Configure MySQL:
-   - Create the database:
-     - `CREATE DATABASE accounts;`
-   - Import the sample data:
-     - `mysql -u <username> -p accounts < src/main/resources/db_backup.sql`
-
-3. Update the database connection in `src/main/resources/application.properties`.
-   Default values currently configured in the repo are:
-   - `jdbc.url=jdbc:mysql://vprodb:3306/accounts?...`
-   - `jdbc.username=root`
-   - `jdbc.password=vprodbpass`
-
-4. Build and run the app:
-   - `mvn clean install`
-   - `mvn jetty:run`
-
-Or deploy the generated WAR to Tomcat.
-
----
-
-## Docker Build
-Build and run the app using Docker:
-
-- Build:
-  - `docker build -t vprofile .`
-- Run:
-  - `docker run --name vprofile -p 8080:8080 vprofile`
-
-The provided `Dockerfile` builds the app with Maven on OpenJDK 11 and deploys the resulting WAR to Tomcat 9.
-
----
-
-## Configuration
-
-The main configuration file is `src/main/resources/application.properties`.
-It includes settings for MySQL, Memcached, RabbitMQ, and Elasticsearch.
-
-Default connection hostnames in the repository are environment-specific and should be replaced for local or cloud use:
-- `vprodb`
-- `vprocache01`
-- `vprocache02`
-- `vpromq01`
-- `vprosearch01`
+- AWS account with appropriate IAM permissions
+- GitHub repository with Actions enabled
+- AWS CLI configured locally
+- Terraform >= 1.0
+- Docker
+- kubectl and helm CLIs
+- Java / Maven (for local builds)
+- VS Code (recommended IDE)
 
 ---
 
@@ -123,17 +80,43 @@ The `Jenkinsfile` defines a build pipeline with these stages:
 - `pom.xml` — Maven build configuration
 - `Dockerfile` — Docker image build instructions
 - `Jenkinsfile` — CI/CD pipeline definition
-- `src/main/java` — Java source code
-- `src/main/resources` — application properties and SQL dump
-- `src/main/webapp/WEB-INF` — Spring configuration and JSP views
 - `ansible/` — deployment automation playbooks
 - `kubernetes/` — Kubernetes manifests
 
 ---
 
-## Notes
-- `Spring Security` uses BCrypt password encoding.
-- User profile data is stored in MySQL and cached with Memcached.
-- Elasticsearch integration uses the transport client and the `users` index.
-- RabbitMQ test messages are published by the `/user/rabbit` endpoint.
-- File uploads are saved under Tomcat `${catalina.home}/tmpFiles`.
+# Architecture Diagram
+```
+Developer IDE (VS Code)
+        │
+        │ Push Code
+        ▼
+ ┌──────────────────────────────────────────────────────────┐
+ │                  CI/CD & INFRASTRUCTURE                   │
+ │                                                           │
+ │  ┌─────────────────────────┐  ┌────────────────────────┐ │
+ │  │  Infrastructure as Code │  │  Application Build &   │ │
+ │  │       (IaC)             │  │       Deploy           │ │
+ │  │                         │  │                        │ │
+ │  │  GitHub Actions Runner  │  │  GitHub Actions Runner │ │
+ │  │    ↓ Fetch Code         │  │    ↓ Fetch Code        │ │
+ │  │  Terraform Plan/Test    │  │  Maven Build           │ │
+ │  │    ↓                    │  │  (+ SonarCloud)        │ │
+ │  │  Pull Request Merge     │  │    ↓ Docker            │ │
+ │  │    ↓                    │  │    ↓ Helm Charts       │ │
+ │  │  Terraform Apply        │  │                        │ │
+ │  │  (Main Branch)          │  │                        │ │
+ │  └──────────┬──────────────┘  └──────────┬─────────────┘ │
+ │             │ Wait for Cluster            │               │
+ └─────────────┼─────────────────────────────┼──────────────┘
+               │                             │
+               ▼                             ▼
+        ┌──────────────────────────────────────────┐
+        │           AWS CLOUD DEPLOYMENT            │
+        │                                           │
+        │  AWS Cloud Infrastructure                 │
+        │                                           │
+        │  VPC Subnet:                              │
+        │    Amazon ECR ──(Pull)──▶ Amazon EKS      │
+        └──────────────────────────────────────────┘
+```
